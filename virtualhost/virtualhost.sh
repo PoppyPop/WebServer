@@ -156,11 +156,11 @@ if [ "$action" == 'create' ]
     		esac
 		done
 		
-		generatedPassword=$(date +%s | sha256sum | base64 | head -c 12)
-		echo "Password  : $generatedPassword"
+		generatedPassword=$(openssl rand -base64 12)
 
 		### Create User
 		adduser --system --group --home $rootDir $owner
+		echo "$generatedPassword" | passwd "$owner" --stdin
 
 		### check if directory exists or not
 		if ! [ -d $rootDir ]; then
@@ -201,6 +201,13 @@ if [ "$action" == 'create' ]
 		chown $owner:$owner $rootDir/web/phpversion.php
 
 		setVirtualHostConfFile $sitesAvailabledomain
+
+		echo -e $"=========== INFOS ==========="
+		echo "Site     : http://$domain And http://*.$domain" 
+		echo "Ftp      : ftp://$(hostname -f)"
+		echo "User     : $owner"
+		echo "Password : $generatedPassword"
+		echo -e $"=========== INFOS ==========="
 
 		### show the finished message
 		echo -e $"Complete! \nYou now have a new Virtual Host \nYour new host is: http://$domain \nAnd its located at $rootDir"
