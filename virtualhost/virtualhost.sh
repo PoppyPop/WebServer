@@ -70,10 +70,10 @@ function setVirtualHostConfFile {
 		</IfModule>
 		
 		<IfModule mod_ssl.c>
-			#SSLEngine on
-			#SSLProtocol All -SSLv2 -SSLv3
-			#SSLCertificateFile $rootDir/ssl/$domain.crt
-			#SSLCertificateKeyFile $rootDir/ssl/$domain.key
+			SSLEngine on
+			SSLProtocol All -SSLv2 -SSLv3
+			SSLCertificateFile $rootDir/ssl/$domain.crt
+			SSLCertificateKeyFile $rootDir/ssl/$domain.key
 		</IfModule>
 
 	</VirtualHost>" > $1
@@ -160,7 +160,7 @@ if [ "$action" == 'create' ]
 
 		### Create User
 		adduser --system --group --home $rootDir $owner
-		echo "$generatedPassword" | passwd "$owner" --stdin
+		echo "$owner:$generatedPassword" | chpasswd
 
 		### check if directory exists or not
 		if ! [ -d $rootDir ]; then
@@ -185,9 +185,17 @@ if [ "$action" == 'create' ]
 		
 		### give permission to subdirectory (A+RX)
 		chmod 1750 $rootDir
-		chmod 1750 $rootDir/web
-		chmod 1750 $rootDir/logs
-		chmod 1750 $rootDir/ssl
+		chmod 1770 $rootDir/web
+		chmod 1440 $rootDir/logs
+		chmod 1770 $rootDir/ssl
+		
+		### Create dummy certificate
+		openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+			-subj "/C=FR/ST=FR/L=Paris/O=$owner/CN=*.$domain" \
+			-keyout $rootDir/ssl/$domain.key -out $rootDir/ssl/$domain.crt
+			
+		chown $owner:$owner $rootDir/ssl/$domain.key
+		chown $owner:$owner $rootDir/ssl/$domain.crt
 		
 		### write test file in the new domain dir
 		if ! echo "<?php echo phpversion(); ?>" > $rootDir/web/phpversion.php
@@ -199,6 +207,7 @@ if [ "$action" == 'create' ]
 		fi
 		
 		chown $owner:$owner $rootDir/web/phpversion.php
+		chmod 550 $rootDir/web/phpversion.php
 
 		setVirtualHostConfFile $sitesAvailabledomain
 
@@ -210,7 +219,6 @@ if [ "$action" == 'create' ]
 		echo -e $"=========== INFOS ==========="
 
 		### show the finished message
-		echo -e $"Complete! \nYou now have a new Virtual Host \nYour new host is: http://$domain \nAnd its located at $rootDir"
 		echo -e $"Don't forget to enable it"
 		
 	elif [ "$action" == 'enable' ]; then
@@ -273,12 +281,12 @@ if [ "$action" == 'create' ]
 		### check if directory exists or not
 		if [ -d $rootDir ]; then
 		
-			sysuser=$(ls -ld $rootDir | awk '{print $3}')
+			sysuser=$(ls -ld $rootDir | awk '{print $4}')
 			
 			deluser --system --remove-home $sysuser
-			deluser --system --group --remove-home $sysuser
+			#deluser --system --group --remove-home $sysuser
 			
-			rml -rf $rootDir
+			rm -rf $rootDir
 		
 			echo -e $"Directory deleted"
 		else
