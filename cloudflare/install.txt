@@ -1,0 +1,4 @@
+// Install addon to log real IP
+wget https://www.cloudflare.com/static/misc/mod_cloudflare/debian/mod_cloudflare-jessie-amd64.latest.deb
+
+dpkg -i mod_cloudflare-jessie-amd64.latest.deb
