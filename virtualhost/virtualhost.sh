@@ -1,5 +1,8 @@
 #!/bin/bash
 
+### Requirements
+source /etc/apache2/envvars
+
 ### functions
 
 function setVirtualHostConfFile {
@@ -21,7 +24,7 @@ function setVirtualHostConfFile {
 		LogLevel warn
 
 		CustomLog $rootDir/logs/access.log combined
-		ErrorLog $rootDir/logs/error.log
+		ErrorLog  $rootDir/logs/error.log
 		
 		<Directory $rootDir/web>
 			Options +FollowSymLinks
@@ -51,7 +54,7 @@ function setVirtualHostConfFile {
 		LogLevel warn
 
 		CustomLog $rootDir/logs/access.log combined
-		ErrorLog $rootDir/logs/error.log
+		ErrorLog  $rootDir/logs/error.log
 		
 		<Directory $rootDir/web>
 			Options +FollowSymLinks
@@ -176,7 +179,11 @@ if [ "$action" == 'create' ]
 		mkdir $rootDir/web
 		mkdir $rootDir/logs
 		mkdir $rootDir/ssl
-				
+		
+		## Logs
+		ln -s $rootDir/logs/access.log ${APACHE_LOG_DIR}/$domain-access.log
+		ln -s $rootDir/logs/error.log ${APACHE_LOG_DIR}/$domain-error.log
+						
 		### change user
 		chown root:$owner $rootDir
 		chown root:$owner $rootDir/web
@@ -186,7 +193,7 @@ if [ "$action" == 'create' ]
 		### give permission to subdirectory (A+RX)
 		chmod 1750 $rootDir
 		chmod 1770 $rootDir/web
-		chmod 1440 $rootDir/logs
+		chmod 1770 $rootDir/logs
 		chmod 1770 $rootDir/ssl
 		
 		### Create dummy certificate
@@ -292,6 +299,9 @@ if [ "$action" == 'create' ]
 		else
 			echo -e $"Host directory not found. Unable to delete the user"
 		fi	
+		
+		## Logs
+		rm ${APACHE_LOG_DIR}/$domain-*
 		
 		### show the finished message
 		echo -e $"Complete!\nYou just removed Virtual Host $siteName"
