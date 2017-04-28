@@ -156,6 +156,9 @@ if [ "$action" == 'create' ]
     		esac
 		done
 		
+		generatedPassword=$(date +%s | sha256sum | base64 | head -c 12)
+		echo "Password  : $generatedPassword"
+
 		### Create User
 		adduser --system --group --home $rootDir $owner
 
