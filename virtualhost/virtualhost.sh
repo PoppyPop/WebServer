@@ -217,12 +217,24 @@ if [ "$action" == 'create' ]
 		chmod 550 $rootDir/web/phpversion.php
 
 		setVirtualHostConfFile $sitesAvailabledomain
+		
+		### Create database
+		databasePassword=$(openssl rand -base64 12)
+		
+		echo "create database $owner;" | mysql --defaults-file=mysql-client.conf
+		echo "GRANT SELECT,INSERT,UPDATE,DELETE,CREATE,DROP ON $owner.* TO '$owner'@'localhost' IDENTIFIED BY '$databasePassword';" | mysql --defaults-file=mysql-client.conf
 
 		echo -e $"=========== INFOS ==========="
 		echo "Site     : http://$domain And http://*.$domain" 
+		echo "==      Ftp      =="
 		echo "Ftp      : ftp://$(hostname -f)"
 		echo "User     : $owner"
 		echo "Password : $generatedPassword"
+		echo "==    Database   =="
+		echo "Url      : https://$(hostname -f)/phpmyadmin"
+		echo "User     : $owner"
+		echo "Base     : $owner"
+		echo "Password : $databasePassword"
 		echo -e $"=========== INFOS ==========="
 
 		### show the finished message
@@ -299,6 +311,10 @@ if [ "$action" == 'create' ]
 		else
 			echo -e $"Host directory not found. Unable to delete the user"
 		fi	
+		
+		## Database
+		echo "drop database $owner;" | mysql --defaults-file=mysql-client.conf
+		echo "DROP USER '$owner'@'localhost';" | mysql --defaults-file=mysql-client.conf
 		
 		## Logs
 		rm ${APACHE_LOG_DIR}/$domain-*
