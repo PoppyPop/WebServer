@@ -123,8 +123,7 @@ sitesAvailabledomain=$sitesAvailable$siteName
 rootDir=$userDir$domain
 email="webmaster@$domain"
 owner=$(echo "$domain" | sed 's~[^[:alnum:]/]\+~~g')
-
-
+owner=${owner:0:15}
 
 echo "====== Configuration ======"
 echo "Action    : $action"
@@ -308,13 +307,17 @@ if [ "$action" == 'create' ]
 			rm -rf $rootDir
 		
 			echo -e $"Directory deleted"
+			
+			## BDD User
+
+			echo "DROP USER '$sysuser'@'localhost';" | mysql --defaults-file=mysql-client.conf
+			
 		else
-			echo -e $"Host directory not found. Unable to delete the user"
+			echo -e $"Host directory not found. Unable to delete the user (sys, bdd)"
 		fi	
 		
-		## Database
+		### Bdd File
 		echo "drop database $owner;" | mysql --defaults-file=mysql-client.conf
-		echo "DROP USER '$owner'@'localhost';" | mysql --defaults-file=mysql-client.conf
 		
 		## Logs
 		rm ${APACHE_LOG_DIR}/$domain-*
