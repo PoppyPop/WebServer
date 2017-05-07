@@ -1,0 +1,4 @@
+#!/bin/bash
+#
+
+/srv/scripts/backup-all.sh
