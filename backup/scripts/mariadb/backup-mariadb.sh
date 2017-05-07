@@ -1,8 +1,10 @@
 #!/bin/bash
 #
 
+src=${BASH_SOURCE%/*}
+
 username=bkpuser
-password=$(cat password.key)
+password=$(cat $src/password.key)
 datadir=/var/lib/mysql/
 conf=/etc/mysql/my.cnf
 
@@ -51,7 +53,8 @@ then
     
     echo "Mariadb: Ok"
 else
-    echo "Mariadb: Fail"    
+    echo "Mariadb: Fail" 
+    exit 1   
 fi
 
 
