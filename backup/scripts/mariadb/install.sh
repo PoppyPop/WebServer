@@ -3,8 +3,6 @@
 
 src=${BASH_SOURCE%/*}
 
-sudo apt-get install percona-xtrabackup
-
 if [ ! -f $src/password.key ] 
 then 
 	databasePassword=$(openssl rand -base64 16)
