@@ -9,6 +9,9 @@ IPT="/sbin/iptables"
 $IPT --flush
 $IPT --delete-chain
 
+$IPT -t nat --flush
+$IPT -t nat --delete-chain
+
 # Enable free use of loopback interfaces
 $IPT -A INPUT -i lo -j ACCEPT
 $IPT -A OUTPUT -o lo -j ACCEPT
@@ -43,3 +46,13 @@ $IPT -A INPUT -p icmp -m icmp --icmp-type 8 -j ACCEPT
 $IPT -P INPUT DROP
 $IPT -P FORWARD DROP
 $IPT -P OUTPUT ACCEPT
+
+# OPENVPN
+$IPT -A INPUT -i tun+ -j ACCEPT
+
+$IPT -A FORWARD -i tun+ -j ACCEPT
+$IPT -A FORWARD -i tun+ -o eth0 -m state --state RELATED,ESTABLISHED -j ACCEPT
+$IPT -A FORWARD -i eth0 -o tun+ -m state --state RELATED,ESTABLISHED -j ACCEPT
+
+$IPT -t nat -A POSTROUTING -s 10.8.0.0/24 -o eth0 -j MASQUERADE
+$IPT -A INPUT -p udp --dport 1194 -m udp -j ACCEPT
