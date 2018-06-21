@@ -88,6 +88,38 @@ function setVirtualHostConfFile {
 	fi
 }
 
+function setLogRotateConfFile {
+	### create virtual host rules file
+	if ! tee $1 &>/dev/null <<EOF
+$rootDir/logs/*.log {
+	daily
+	missingok
+	rotate 14
+	compress
+	delaycompress
+	notifempty
+	create 640 root adm
+	sharedscripts
+	postrotate
+		if /etc/init.d/apache2 status > /dev/null ; then \
+			/etc/init.d/apache2 reload > /dev/null; \
+		fi;
+	endscript
+	prerotate
+		if [ -d /etc/logrotate.d/httpd-prerotate ]; then \
+			run-parts /etc/logrotate.d/httpd-prerotate; \
+		fi; 
+	endscript
+}
+EOF
+	then
+		echo -e $"There is an ERROR creating $domain logrotate file"
+		exit;exit 4;
+	else
+		echo -e $"LogRotate Created"
+	fi
+}
+
 
 
 ### Set default parameters
@@ -121,6 +153,7 @@ domain=$(echo "$domain" | tr '[:upper:]' '[:lower:]')
 siteName=$priority-$domain.conf
 sitesAvailabledomain=$sitesAvailable$siteName
 rootDir=$userDir$domain
+logrotateConf=/etc/logrotate.d/$domain
 email="webmaster@$domain"
 owner=$(echo "$domain" | sed 's~[^[:alnum:]/]\+~~g')
 owner=${owner:0:15}
@@ -216,6 +249,7 @@ if [ "$action" == 'create' ]
 		chmod 550 $rootDir/web/phpversion.php
 
 		setVirtualHostConfFile $sitesAvailabledomain
+		setLogRotateConfFile $logrotateConf
 		
 		### Create database
 		databasePassword=$(openssl rand -base64 12)
@@ -296,6 +330,9 @@ if [ "$action" == 'create' ]
 		### Delete virtual host rules files
 		rm $sitesAvailabledomain	
 		
+		### Delete logrotate
+		rm $logrotateConf
+		
 		### check if directory exists or not
 		if [ -d $rootDir ]; then
 		
@@ -333,6 +370,7 @@ if [ "$action" == 'create' ]
 		fi
 		
 		setVirtualHostConfFile $sitesAvailabledomain
+		setLogRotateConfFile $logrotateConf
 		
 		### show the finished message
 		echo -e $"Complete!\nYou just updated Virtual Host $siteName"
