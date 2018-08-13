@@ -120,7 +120,23 @@ EOF
 	fi
 }
 
+function genCrt {
 
+	rootDir=$1
+	domain=$2
+	owner=$3
+	
+	openssl req -x509 -newkey rsa:4096 -days 3650 -sha256 -nodes \
+			-subj "/C=FR/ST=FR/L=Paris/O=$owner/CN=$domain" \
+			-reqexts SAN \
+			-extensions SAN \
+			-config <(cat /etc/ssl/openssl.cnf \
+				<(printf "\n[SAN]\nsubjectAltName=DNS:*.$domain")) \
+			-keyout $rootDir/ssl/$domain.key -out $rootDir/ssl/$domain.crt
+			
+	chown $owner:$owner $rootDir/ssl/$domain.key
+	chown $owner:$owner $rootDir/ssl/$domain.crt
+}
 
 ### Set default parameters
 action=$1
@@ -228,13 +244,8 @@ if [ "$action" == 'create' ]
 		chmod 1770 $rootDir/logs
 		chmod 1770 $rootDir/ssl
 		
-		### Create dummy certificate
-		openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-			-subj "/C=FR/ST=FR/L=Paris/O=$owner/CN=*.$domain" \
-			-keyout $rootDir/ssl/$domain.key -out $rootDir/ssl/$domain.crt
-			
-		chown $owner:$owner $rootDir/ssl/$domain.key
-		chown $owner:$owner $rootDir/ssl/$domain.crt
+		### Create dummy certificate	
+		genCrt $rootDir $domain $owner
 		
 		### write test file in the new domain dir
 		if ! echo "<?php echo phpversion(); ?>" > $rootDir/web/phpversion.php
@@ -255,7 +266,7 @@ if [ "$action" == 'create' ]
 		databasePassword=$(openssl rand -base64 12)
 		
 		echo "create database $owner;" | mysql --defaults-file=mysql-client.conf
-		echo "GRANT SELECT,INSERT,UPDATE,DELETE,CREATE,DROP ON $owner.* TO '$owner'@'localhost' IDENTIFIED BY '$databasePassword';" | mysql --defaults-file=mysql-client.conf
+		echo "GRANT SELECT,INSERT,UPDATE,DELETE,CREATE,ALTER,INDEX,DROP ON $owner.* TO '$owner'@'localhost' IDENTIFIED BY '$databasePassword';" | mysql --defaults-file=mysql-client.conf
 
 		echo -e $"=========== INFOS ==========="
 		echo "Site     : http://$domain And http://*.$domain" 
@@ -374,6 +385,19 @@ if [ "$action" == 'create' ]
 		
 		### show the finished message
 		echo -e $"Complete!\nYou just updated Virtual Host $siteName"
+		exit 0;
+	elif [ "$action" == 'renew' ]; then
+		### check whether domain already exists
+		if ! [ -e $sitesAvailabledomain ]; then
+			echo -e $"This domain does not exist.\nPlease try another one"
+			exit 2;
+		fi
+		
+		### Create dummy certificate	
+		genCrt $rootDir $domain $owner
+		
+		### show the finished message
+		echo -e $"Complete!\nYou just renewed Virtual Host $siteName"
 		exit 0;
 	else
 		### show the finished message
