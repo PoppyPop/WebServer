@@ -94,6 +94,7 @@ function setLogRotateConfFile {
 $rootDir/logs/*.log {
 	daily
 	missingok
+	su root $owner
 	rotate 14
 	compress
 	delaycompress
@@ -210,7 +211,7 @@ if [ "$action" == 'create' ]
 		generatedPassword=$(openssl rand -base64 12)
 
 		### Create User
-		adduser --system --group --home $rootDir $owner
+		adduser --system --group --shell /bin/false --home $rootDir $owner
 		echo "$owner:$generatedPassword" | chpasswd
 
 		### check if directory exists or not
